@@ -1,9 +1,9 @@
-import { useGLTF, useAnimations, Environment, OrbitControls, useHelper } from '@react-three/drei'
+import { useGLTF, useAnimations, Environment, OrbitControls } from '@react-three/drei'
 import { useEffect, useRef } from 'react'
 import type { Group, DirectionalLight } from 'three'
 import { Object3D } from 'three'
-import { DirectionalLightHelper } from 'three'
 import modelUrl from '../assets/models/star_orb.glb?url'
+import { useThree } from '@react-three/fiber'
 
 function Model() {
   const group = useRef<Group>(null)
@@ -12,11 +12,20 @@ function Model() {
 
   useEffect(() => {
     const firstAction = Object.values(actions)[0]
-    firstAction.timeScale = 0.8
-    firstAction?.play()
+    if (firstAction) {
+      firstAction.timeScale = 0.8
+      firstAction.play()
+    }
   }, [actions])
-
   return <primitive ref={group} object={scene} />
+}
+
+function CameraAim({ target }: { target: [number, number, number] }) {
+  const { camera } = useThree()
+  useEffect(() => {
+    camera.lookAt(...target)
+  }, [camera, target])
+  return null
 }
 
 function Lights() {
@@ -24,10 +33,6 @@ function Lights() {
   const light2 = useRef<DirectionalLight>(null!)
   const target = useRef(new Object3D())
   const light3 = useRef<DirectionalLight>(null!)
-
-  useHelper(light1 as any, DirectionalLightHelper, 1, '#ffffff')
-  useHelper(light2 as any, DirectionalLightHelper, 1, '#ffffff')
-  useHelper(light3 as any, DirectionalLightHelper, 1, '#ffffff')
 
   return (
     <>
@@ -62,7 +67,8 @@ function Background() {
       <Lights />
       <Environment files="/hdri/event.hdr" />
       <Model />
-      <OrbitControls />
+      <CameraAim target={[0, -5.2, 27]} />
+      <OrbitControls target={[0, -5.2, 27]} enabled={false} />
     </>
   )
 }
