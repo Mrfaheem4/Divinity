@@ -1,18 +1,52 @@
-import { app, shell, BrowserWindow } from 'electron'
-import { join } from 'path'
+import { app, shell, BrowserWindow, WebContentsView, ipcMain } from 'electron'
+import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+
+function getContentBounds(win: BrowserWindow) {
+  const [width, height] = win.getContentSize()
+  const topBarHeight = 64
+  const sideMargin = 16
+  const bottomMargin = 16
+
+  return {
+    x: sideMargin,
+    y: topBarHeight,
+    width: width - sideMargin * 2,
+    height: height - topBarHeight - bottomMargin
+  }
+}
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
+    icon: join(__dirname, '../../build/icon.png'),
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
+  })
+
+  const view = new WebContentsView()
+  mainWindow.contentView.addChildView(view)
+  view.setBorderRadius(16)
+  view.setVisible(false)
+
+  const updateBounds = () => {
+    view.setBounds(getContentBounds(mainWindow))
+  }
+  updateBounds()
+  mainWindow.on('resize', updateBounds)
+
+  ipcMain.on('navigate', (_event, url: string) => {
+    view.webContents.loadURL(url)
+    view.setVisible(true)
+  })
+
+  view.webContents.on('did-navigate', (__event, finalUrl) => {
+    mainWindow.webContents.send('url-changed', finalUrl)
   })
 
   mainWindow.on('ready-to-show', () => {

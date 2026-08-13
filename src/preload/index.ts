@@ -3,7 +3,13 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
-  navigate: (url: string) => ipcRenderer.send('navigate', url)
+  navigate: (url: string) => ipcRenderer.send('navigate', url),
+  getCurrentUrl: () => ipcRenderer.invoke('get-current-url'),
+  onUrlChanged: (callback: (url: string) => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, url: string) => callback(url)
+    ipcRenderer.on('url-changed', listener)
+    return () => ipcRenderer.removeListener('url-changed', listener)
+  }
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

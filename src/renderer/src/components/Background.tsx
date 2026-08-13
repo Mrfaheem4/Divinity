@@ -5,18 +5,29 @@ import { Object3D } from 'three'
 import modelUrl from '../assets/models/star_orb.glb?url'
 import { useThree } from '@react-three/fiber'
 
-function Model() {
+function Model({ isDocked }: { isDocked: boolean }) {
+  // NEW: accept isDocked as a prop
   const group = useRef<Group>(null)
   const { scene, animations } = useGLTF(modelUrl)
   const { actions } = useAnimations(animations, group)
+  const actionRef = useRef<any>(null) // NEW: a "box" to remember the action
 
   useEffect(() => {
     const firstAction = Object.values(actions)[0]
     if (firstAction) {
       firstAction.timeScale = 0.8
       firstAction.play()
+      actionRef.current = firstAction // NEW: store it in the box
     }
   }, [actions])
+
+  useEffect(() => {
+    // NEW: a second effect, watches isDocked
+    if (actionRef.current) {
+      actionRef.current.paused = isDocked // NEW: pause/unpause based on isDocked
+    }
+  }, [isDocked])
+
   return <primitive ref={group} object={scene} />
 }
 
@@ -61,12 +72,12 @@ function Lights() {
   )
 }
 
-function Background() {
+function Background({ isDocked }: { isDocked: boolean }) {
   return (
     <>
       <Lights />
       <Environment files="/hdri/event.hdr" />
-      <Model />
+      <Model isDocked={isDocked} />
       <CameraAim target={[0, -5.2, 27]} />
       <OrbitControls target={[0, -5.2, 27]} enabled={false} />
     </>
