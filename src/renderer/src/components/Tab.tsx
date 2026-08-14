@@ -1,24 +1,38 @@
+import { useEffect, useState } from 'react' // make sure useEffect is imported
 import { Canvas } from '@react-three/fiber'
 import Searchbar from './foreground/Searchbar'
-import { useState } from 'react'
 import Background from './Background'
 
 function Tab() {
   const [isDocked, setIsDocked] = useState(false)
 
+  // NEW — separate, top-level effect, runs once on mount
+  useEffect(() => {
+    window.api.getCurrentState().then(({ url, isVisible }) => {
+      console.log('restored state:', { url, isVisible })
+      if (isVisible && url) {
+        setIsDocked(true)
+      }
+    })
+  }, [])
+
   function handleSearchComplete(url: string) {
     window.api.navigate(url)
   }
 
+  function goHome() {
+    window.api.goHome() // tells main process to hide the view
+    setIsDocked(false) // Tab's own state — brings back 3D background
+  }
+
   return (
     <div className="relative h-full w-full">
-      {/* 3D layer */}
       <div
         className="absolute inset-0 z-0"
         style={{
-          opacity: isDocked ? 0 : 1, // NEW: fade out when docked
-          transition: 'opacity 500ms ease', // NEW: smooth fade instead of a snap
-          pointerEvents: isDocked ? 'none' : 'auto' // NEW: can't click through it once hidden... or into it
+          opacity: isDocked ? 0 : 1,
+          transition: 'opacity 500ms ease',
+          pointerEvents: isDocked ? 'none' : 'auto'
         }}
       >
         <Canvas camera={{ position: [0, -5, 30] }}>
@@ -29,9 +43,12 @@ function Tab() {
         </Canvas>
       </div>
 
-      {/* UI layer */}
       <div className="absolute inset-0 z-10">
-        <Searchbar onDock={() => setIsDocked(true)} onSearch={handleSearchComplete} />
+        <Searchbar
+          onDock={() => setIsDocked(true)}
+          onSearch={handleSearchComplete}
+          onGoHome={goHome}
+        />
       </div>
     </div>
   )

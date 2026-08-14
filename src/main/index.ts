@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, WebContentsView, ipcMain } from 'electron'
 import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { loadBookmarks, saveBookmarks, Bookmark } from './bookmarks'
 
 function getContentBounds(win: BrowserWindow) {
   const [width, height] = win.getContentSize()
@@ -45,6 +46,13 @@ function createWindow(): void {
     view.setVisible(true)
   })
 
+  ipcMain.handle('get-current-state', () => {
+    return {
+      url: view.webContents.getURL(),
+      isVisible: view.getVisible() // WebContentsView has a getVisible() method
+    }
+  })
+
   view.webContents.on('did-navigate', (__event, finalUrl) => {
     mainWindow.webContents.send('url-changed', finalUrl)
   })
@@ -52,6 +60,19 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
+
+  ipcMain.on('go-back', () => view.webContents.navigationHistory.goBack())
+  ipcMain.on('go-forward', () => view.webContents.navigationHistory.goForward())
+  ipcMain.on('reload', () => view.webContents.reload())
+  ipcMain.on('go-home', () => {
+    view.setVisible(false)
+  })
+  ipcMain.handle('can-go-back', () => view.webContents.navigationHistory.canGoBack())
+  ipcMain.handle('can-go-forward', () => view.webContents.navigationHistory.canGoForward())
+
+  let bookmarks: Bookmark[] = loadBookmarks()
+
+  ipcMain.handle('get-bookmarks', () => bookmarks)
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)

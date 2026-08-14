@@ -9,12 +9,21 @@ const api = {
     const listener = (_e: Electron.IpcRendererEvent, url: string) => callback(url)
     ipcRenderer.on('url-changed', listener)
     return () => ipcRenderer.removeListener('url-changed', listener)
-  }
+  },
+  getCurrentState: () => ipcRenderer.invoke('get-current-state'),
+
+  goBack: () => ipcRenderer.send('go-back'),
+  goForward: () => ipcRenderer.send('go-forward'),
+  reload: () => ipcRenderer.send('reload'),
+  goHome: () => ipcRenderer.send('go-home'),
+  canGoBack: () => ipcRenderer.invoke('can-go-back'),
+  canGoForward: () => ipcRenderer.invoke('can-go-forward'),
+  getBookmarks: () => ipcRenderer.invoke('get-bookmarks'),
+  addBookmark: (bookmark: { label: string; url: string }) =>
+    ipcRenderer.send('add-bookmark', bookmark),
+  removeBookmark: (url: string) => ipcRenderer.send('remove-bookmark', url)
 }
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)

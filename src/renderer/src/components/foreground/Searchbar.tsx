@@ -2,25 +2,81 @@ import { useEffect, useRef, useState } from 'react'
 import { animate } from 'animejs'
 import SpotlightCard from '../SpotlightCard'
 import { handleSearch } from '../../handlers/handleSearch'
+import {
+  goBack,
+  goForward,
+  canGoBack as checkCanGoBack,
+  canGoForward as checkCanGoForward,
+  goHome
+} from '../../handlers/handleNavigation'
+import Bookmarks from './Bookmarks'
 
-function Searchbar({ onDock, onSearch }: { onSearch?: (url: string) => void; onDock: () => void }) {
+function Searchbar({
+  onDock,
+  onSearch,
+  onGoHome
+}: {
+  onSearch?: (url: string) => void
+  onDock: () => void
+  onGoHome?: () => void
+}) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDocked, setIsDocked] = useState(false)
+  const [canBack, setCanBack] = useState(false)
+  const [canForward, setCanForward] = useState(false)
 
-  // keep the bar in sync with wherever the view actually navigates to
   useEffect(() => {
     const unsubscribe = window.api.onUrlChanged((url) => {
       if (inputRef.current && document.activeElement !== inputRef.current) {
         inputRef.current.value = url
       }
+      checkCanGoBack().then(setCanBack)
+      checkCanGoForward().then(setCanForward)
     })
     return unsubscribe
   }, [])
 
+  useEffect(() => {
+    window.api.getCurrentState().then(({ url, isVisible }) => {
+      if (isVisible) {
+        setIsDocked(true)
+        if (inputRef.current && url) inputRef.current.value = url
+      }
+    })
+  }, [])
+
   function handleFocus() {
-    // select-all on focus, like a real address bar — makes re-searching one keystroke away
     inputRef.current?.select()
+  }
+
+  function dockAndNavigate(resolvedUrl: string) {
+    if (!isDocked && wrapperRef.current) {
+      const rect = wrapperRef.current.getBoundingClientRect()
+      const targetTop = 4
+      const deltaY = targetTop - rect.top
+
+      setIsDocked(true)
+      onDock?.()
+
+      animate(wrapperRef.current, {
+        translateY: deltaY,
+        width: '90%',
+        height: '2.5rem',
+        duration: 500,
+        ease: 'outExpo',
+        onComplete: () => {
+          if (wrapperRef.current) {
+            wrapperRef.current.style.transform = ''
+            wrapperRef.current.style.width = ''
+            wrapperRef.current.style.height = ''
+          }
+          onSearch?.(resolvedUrl)
+        }
+      })
+    } else {
+      onSearch?.(resolvedUrl)
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -34,40 +90,68 @@ function Searchbar({ onDock, onSearch }: { onSearch?: (url: string) => void; onD
 
     if (e.key !== 'Enter') return
     const query = e.currentTarget.value.trim()
-    if (!query || !wrapperRef.current) return
+    if (!query) return
 
-    const resolvedUrl = handleSearch(query)
-
-    if (!isDocked) {
-      setIsDocked(true)
-      onDock?.()
-
-      const rect = wrapperRef.current.getBoundingClientRect()
-      const targetTop = 12
-      const deltaY = targetTop - rect.top
-
-      animate(wrapperRef.current, {
-        translateY: deltaY,
-        width: '90%',
-        height: '3rem',
-        duration: 500,
-        ease: 'outExpo',
-        onComplete: () => onSearch?.(resolvedUrl)
-      })
-    } else {
-      onSearch?.(resolvedUrl)
-    }
-
+    dockAndNavigate(handleSearch(query))
     inputRef.current?.blur()
   }
 
+  function handleGoHome() {
+    setIsDocked(false)
+    onGoHome?.()
+  }
+
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
       <div
         ref={wrapperRef}
-        className="pointer-events-auto"
-        style={{ width: '30rem', height: '3rem', marginTop: '20rem' }}
+        className={`pointer-events-auto flex items-center gap-2 ${
+          isDocked ? 'fixed top-1 w-[90%] h-10' : ''
+        }`}
+        style={!isDocked ? { width: '30rem', height: '3rem', marginTop: '20rem' } : undefined}
       >
+        {isDocked && (
+          <>
+            <SpotlightCard
+              className="!rounded-full !p-0 shrink-0 w-10 h-10"
+              spotlightColor="rgba(255, 255, 255, 0.25)"
+            >
+              <button
+                onClick={() => handleGoHome()}
+
+                className="w-full h-full flex items-center justify-center rounded-full border-2 border-white/50 bg-transparent"
+              >
+                <img src="./icons/home.svg" className="w-4 h-4" alt="forward" />
+              </button>
+            </SpotlightCard>
+            <SpotlightCard
+              className="!rounded-full !p-0 shrink-0 w-10 h-10"
+              spotlightColor="rgba(255, 255, 255, 0.25)"
+            >
+              <button
+                onClick={() => goBack()}
+                disabled={!canBack}
+                className="w-full h-full flex items-center justify-center rounded-full border-2 border-white/50 bg-transparent "
+              >
+                <img src="./icons/backward.svg" className="w-4 h-4" alt="back" />
+              </button>
+            </SpotlightCard>
+
+            <SpotlightCard
+              className="!rounded-full !p-0 shrink-0 w-10 h-10"
+              spotlightColor="rgba(255, 255, 255, 0.25)"
+            >
+              <button
+                onClick={() => goForward()}
+                disabled={!canForward}
+                className="w-full h-full flex items-center justify-center rounded-full border-2 border-white/50 bg-transparent"
+              >
+                <img src="./icons/forward.svg" className="w-4 h-4" alt="forward" />
+              </button>
+            </SpotlightCard>
+          </>
+        )}
+
         <SpotlightCard
           className="w-full h-full !rounded-full !p-0"
           spotlightColor="rgba(255, 255, 255, 0.25)"
@@ -85,6 +169,8 @@ function Searchbar({ onDock, onSearch }: { onSearch?: (url: string) => void; onD
           </div>
         </SpotlightCard>
       </div>
+
+      {!isDocked && <Bookmarks onSelect={dockAndNavigate} />}
     </div>
   )
 }
