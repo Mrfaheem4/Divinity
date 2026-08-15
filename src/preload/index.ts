@@ -19,9 +19,7 @@ const api = {
   canGoBack: () => ipcRenderer.invoke('can-go-back'),
   canGoForward: () => ipcRenderer.invoke('can-go-forward'),
   getBookmarks: () => ipcRenderer.invoke('get-bookmarks'),
-  addBookmark: (bookmark: { label: string; url: string }) =>
-    ipcRenderer.send('add-bookmark', bookmark),
-  removeBookmark: (url: string) => ipcRenderer.send('remove-bookmark', url)
+  switchTab: (tabId: string) => ipcRenderer.send('switch-tab', tabId)
 }
 
 if (process.contextIsolated) {

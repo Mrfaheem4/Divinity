@@ -38,8 +38,8 @@ function Searchbar({
   }, [])
 
   useEffect(() => {
-    window.api.getCurrentState().then(({ url, isVisible }) => {
-      if (isVisible) {
+    window.api.getCurrentState().then(({ url, isHome }) => {
+      if (!isHome) {
         setIsDocked(true)
         if (inputRef.current && url) inputRef.current.value = url
       }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react' // make sure useEffect is imported
+import { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import Searchbar from './foreground/Searchbar'
 import Background from './Background'
@@ -6,11 +6,10 @@ import Background from './Background'
 function Tab() {
   const [isDocked, setIsDocked] = useState(false)
 
-  // NEW — separate, top-level effect, runs once on mount
   useEffect(() => {
-    window.api.getCurrentState().then(({ url, isVisible }) => {
-      console.log('restored state:', { url, isVisible })
-      if (isVisible && url) {
+    window.api.getCurrentState().then(({ url, isHome }) => {
+      console.log('restored state:', { url, isHome })
+      if (!isHome) {
         setIsDocked(true)
       }
     })
@@ -21,13 +20,31 @@ function Tab() {
   }
 
   function goHome() {
-    window.api.goHome() // tells main process to hide the view
-    setIsDocked(false) // Tab's own state — brings back 3D background
+    window.api.goHome()
+    setIsDocked(false)
   }
 
   return (
     <div className="relative h-full w-full">
       <div
+        style={{
+          position: 'absolute',
+          top: 8,
+          right: 16,
+          zIndex: 50,
+          display: 'flex',
+          gap: 8,
+          padding: '4px 8px',
+          borderRadius: '8px'
+        }}
+      >
+        <button className="bg-amber-700" onClick={() => window.api.switchTab('tab1')}>
+          Tab 1
+        </button>
+        <button onClick={() => window.api.switchTab('tab2')}>Tab 2</button>
+      </div>
+
+      {/* <div
         className="absolute inset-0 z-0"
         style={{
           opacity: isDocked ? 0 : 1,
@@ -41,15 +58,15 @@ function Tab() {
           <pointLight position={[-2, -1, 2]} intensity={0.5} color="#ffffff" />
           <Background isDocked={isDocked} />
         </Canvas>
-      </div>
+      </div> */}
 
-      <div className="absolute inset-0 z-10">
+      {/* <div className="absolute inset-0 z-10">
         <Searchbar
           onDock={() => setIsDocked(true)}
           onSearch={handleSearchComplete}
           onGoHome={goHome}
         />
-      </div>
+      </div> */}
     </div>
   )
 }
