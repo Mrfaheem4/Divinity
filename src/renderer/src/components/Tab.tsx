@@ -15,6 +15,13 @@ function Tab() {
     })
   }, [])
 
+  useEffect(() => {
+    const unsubscribe = window.api.onTabSwitched(({ isHome }) => {
+      setIsDocked(!isHome)
+    })
+    return unsubscribe
+  }, [])
+
   function handleSearchComplete(url: string) {
     window.api.navigate(url)
   }
@@ -60,13 +67,14 @@ function Tab() {
         </Canvas>
       </div> */}
 
-      {/* <div className="absolute inset-0 z-10">
+      <div className="absolute inset-0 z-10">
         <Searchbar
+          isDocked={isDocked}
           onDock={() => setIsDocked(true)}
           onSearch={handleSearchComplete}
           onGoHome={goHome}
         />
-      </div> */}
+      </div>
     </div>
   )
 }

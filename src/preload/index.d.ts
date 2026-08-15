@@ -4,7 +4,8 @@ interface Api {
   navigate: (url: string) => void
   getCurrentUrl: () => Promise<string>
   onUrlChanged: (callback: (url: string) => void) => () => void
-  getCurrentState: () => Promise<{ url: string; isHome: boolean }> // NEW
+  getCurrentState: () => Promise<{ url: string; isHome: boolean }>
+  onTabSwitched: (callback: (state: { isHome: boolean; url: string }) => void) => () => void
 
   goBack: () => void
   goForward: () => void

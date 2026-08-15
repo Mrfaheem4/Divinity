@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { on } from 'events'
 
 // Custom APIs for renderer
 const api = {
@@ -10,6 +11,13 @@ const api = {
     ipcRenderer.on('url-changed', listener)
     return () => ipcRenderer.removeListener('url-changed', listener)
   },
+  onTabSwitched: (callback: (state: { isHome: boolean; url: string }) => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, state: { isHome: boolean; url: string }) =>
+      callback(state)
+    ipcRenderer.on('tab-switched', listener)
+    return () => ipcRenderer.removeListener('tab-switched', listener)
+  },
+
   getCurrentState: () => ipcRenderer.invoke('get-current-state'),
 
   goBack: () => ipcRenderer.send('go-back'),

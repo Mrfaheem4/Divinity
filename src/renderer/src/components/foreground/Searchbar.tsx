@@ -14,15 +14,16 @@ import Bookmarks from './Bookmarks'
 function Searchbar({
   onDock,
   onSearch,
-  onGoHome
+  onGoHome,
+  isDocked
 }: {
   onSearch?: (url: string) => void
   onDock: () => void
   onGoHome?: () => void
+  isDocked: boolean
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [isDocked, setIsDocked] = useState(false)
   const [canBack, setCanBack] = useState(false)
   const [canForward, setCanForward] = useState(false)
 
@@ -39,8 +40,7 @@ function Searchbar({
 
   useEffect(() => {
     window.api.getCurrentState().then(({ url, isHome }) => {
-      if (!isHome) {
-        setIsDocked(true)
+      if (isDocked) {
         if (inputRef.current && url) inputRef.current.value = url
       }
     })

@@ -62,6 +62,11 @@ function createWindow(): void {
     tabs.get(activeTab)!.view.setVisible(false)
     tabs.get(clickedTab)!.view.setVisible(true)
     activeTab = clickedTab
+
+    mainWindow.webContents.send('tab-switched', {
+      isHome: tabs.get(clickedTab)!.isHome,
+      url: tabs.get(clickedTab)!.view.webContents.getURL()
+    })
   }
 
   // actually create our starting tabs — this was the missing piece
