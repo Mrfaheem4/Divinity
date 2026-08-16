@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import Searchbar from './foreground/Searchbar'
 import Background from './Background'
+import TabBar from './foreground/TabBar'
 
 function Tab() {
   const [isDocked, setIsDocked] = useState(false)
@@ -36,22 +37,8 @@ function Tab() {
 
   return (
     <div className="relative h-full w-full">
-      <div
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 16,
-          zIndex: 50,
-          display: 'flex',
-          gap: 8,
-          padding: '4px 8px',
-          borderRadius: '8px'
-        }}
-      >
-        <button className="bg-amber-700" onClick={() => window.api.switchTab('tab1')}>
-          Tab 1
-        </button>
-        <button onClick={() => window.api.switchTab('tab2')}>Tab 2</button>
+      <div className="absolute top-11 left-0 right-0 z-10">
+        <TabBar />
       </div>
 
       {/* <div
@@ -70,7 +57,7 @@ function Tab() {
         </Canvas>
       </div> */}
 
-      <div className="absolute inset-0 z-10">
+      <div className="absolute inset-0 z-10 pointer-events-none">
         <Searchbar
           isDocked={isDocked}
           onDock={() => setIsDocked(true)}

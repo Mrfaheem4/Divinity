@@ -61,8 +61,8 @@ function Searchbar({
       animate(wrapperRef.current, {
         translateY: deltaY,
         width: '90%',
-        height: '2.5rem',
-        duration: 500,
+        height: '2rem',
+        duration: 350,
         ease: 'outExpo',
         onComplete: () => {
           if (wrapperRef.current) {
@@ -104,14 +104,14 @@ function Searchbar({
       <div
         ref={wrapperRef}
         className={`pointer-events-auto flex items-center gap-2 ${
-          isDocked ? 'fixed top-1 w-[90%] h-10' : ''
+          isDocked ? 'fixed top-1 w-[90%] h-8.5' : ''
         }`}
         style={!isDocked ? { width: '30rem', height: '3rem', marginTop: '20rem' } : undefined}
       >
         {isDocked && (
           <>
             <SpotlightCard
-              className="!rounded-full !p-0 shrink-0 w-10 h-10"
+              className="!rounded-full !p-0 shrink-0 w-10 h-8"
               spotlightColor="rgba(255, 255, 255, 0.25)"
             >
               <button
@@ -123,7 +123,7 @@ function Searchbar({
               </button>
             </SpotlightCard>
             <SpotlightCard
-              className="!rounded-full !p-0 shrink-0 w-10 h-10"
+              className="!rounded-full !p-0 shrink-0 w-10 h-8"
               spotlightColor="rgba(255, 255, 255, 0.25)"
             >
               <button
@@ -136,7 +136,7 @@ function Searchbar({
             </SpotlightCard>
 
             <SpotlightCard
-              className="!rounded-full !p-0 shrink-0 w-10 h-10"
+              className="!rounded-full !p-0 shrink-0 w-10 h-8"
               spotlightColor="rgba(255, 255, 255, 0.25)"
             >
               <button

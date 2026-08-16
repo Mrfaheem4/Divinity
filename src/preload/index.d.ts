@@ -15,6 +15,11 @@ interface Api {
   canGoForward: () => Promise<boolean>
   getBookmarks: () => Promise<{ label: string; url: string }[]>
   switchTab: (tabId: string) => void
+  getTabs: () => Promise<{ id: string; url: string; isHome: boolean }[]>
+
+  onTabsUpdated: (
+    callback: (tabs: { id: string; url: string; isHome: boolean }[]) => void
+  ) => () => void
 }
 
 declare global {

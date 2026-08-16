@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { on } from 'events'
 
 // Custom APIs for renderer
 const api = {
@@ -20,6 +19,15 @@ const api = {
 
   getCurrentState: () => ipcRenderer.invoke('get-current-state'),
 
+  onTabsUpdated: (callback: (tabs: { id: string; url: string; isHome: boolean }[]) => void) => {
+    const listener = (
+      _e: Electron.IpcRendererEvent,
+      tabs: { id: string; url: string; isHome: boolean }[]
+    ) => callback(tabs)
+    ipcRenderer.on('tabs-updated', listener)
+    return () => ipcRenderer.removeListener('tabs-updated', listener)
+  },
+
   goBack: () => ipcRenderer.send('go-back'),
   goForward: () => ipcRenderer.send('go-forward'),
   reload: () => ipcRenderer.send('reload'),
@@ -27,7 +35,8 @@ const api = {
   canGoBack: () => ipcRenderer.invoke('can-go-back'),
   canGoForward: () => ipcRenderer.invoke('can-go-forward'),
   getBookmarks: () => ipcRenderer.invoke('get-bookmarks'),
-  switchTab: (tabId: string) => ipcRenderer.send('switch-tab', tabId)
+  switchTab: (tabId: string) => ipcRenderer.send('switch-tab', tabId),
+  getTabs: () => ipcRenderer.invoke('get-tabs')
 }
 
 if (process.contextIsolated) {

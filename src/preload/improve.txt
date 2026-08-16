@@ -1,0 +1,28 @@
+TabBar.tsx (renderer component)
+No click handler to actually switch tabs — clicking a tab does nothing yet
+No active-tab styling/indicator
+No close button per tab
+No "new tab" (+) button
+Only fetches tabs once on mount via getTabs() — doesn't subscribe to onTabsUpdated, so it goes stale the moment a tab opens/closes/navigates elsewhere
+2. preload/index.ts
+Dead import: import { on } from 'events' — unused, remove it
+onTabsUpdated is referenced in your .d.ts types but was never actually implemented here (fixed since, but flagging since it's a real runtime gap — calling it throws)
+Missing newTab and closeTab exposed methods:
+
+  newTab: (url?: string) => ipcRenderer.send('new-tab', url),
+  closeTab: (tabId: string) => ipcRenderer.send('close-tab', tabId)
+3. index.d.ts
+getCurrentState returns { url; isHome } while onTabSwitched's callback uses { isHome; url } — same shape, different order. Not a bug, but worth unifying into shared types so the shape isn't duplicated:
+
+  type NavState = { url: string; isHome: boolean }
+  type Tab = { id: string; url: string; isHome: boolean }
+Missing type entries for newTab / closeTab once you add them to preload
+Consider merging onTabSwitched and onTabsUpdated into one event/type ({ tabs: Tab[]; activeTabId: string }) so the renderer isn't reconciling two separate streams of "what's the current state" truth
+4. main/index.ts (the big one)
+Bug: get-tabs handler builds result but never returns it — getTabs() currently resolves to undefined in the renderer, TabBar's .map will throw
+Missing: nothing ever sends tabs-updated — add mainWindow.webContents.send('tabs-updated', ...) after switchTab, createTab, navigate, go-home, and future new-tab/close-tab
+Missing handler: preload exposes getCurrentUrl → get-current-url, but there's no ipcMain.handle('get-current-url', ...) in main — this will hang/reject if called
+Crash risk: switchTab does tabs.get(clickedTab)!.view... with a non-null assertion — an invalid/stale tabId from the renderer will throw. Guard with an early return if tabs.get(clickedTab) is undefined
+Stale bounds bug: updateBounds() only resizes the active tab on window resize; a background tab keeps its old bounds until it happens to become active during/after another resize. Loop over all tabs' views instead of just the active one
+go-home doesn't notify the renderer — it flips isHome and hides the view but sends no IPC event, so the UI has no way to know to show the home screen
+Not yet implemented: new-tab and close-tab IPC handlers. createTab() exists as a helper but nothing calls it after the two startup tabs, and there's no teardown logic (removing the view from contentView, closing its webContents, picking a new activeTab if you close the active one) for closing a tab

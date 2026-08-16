@@ -1,26 +1,23 @@
 import { app, shell, BrowserWindow, WebContentsView, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { loadBookmarks, saveBookmarks, Bookmark } from './bookmarks'
+import { loadBookmarks, Bookmark } from './bookmarks'
 
 function getContentBounds(win: BrowserWindow) {
   const [width, height] = win.getContentSize()
-  const topBarHeight = 64
-  const sideMargin = 16
-  const bottomMargin = 16
+  const topBarHeight = 100
 
   return {
-    x: sideMargin,
+    x: 0,
     y: topBarHeight,
-    width: width - sideMargin * 2,
-    height: height - topBarHeight - bottomMargin
+    width: width,
+    height: height - topBarHeight
   }
 }
-
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 900,
-    height: 670,
+    height: 650,
     show: false,
     icon: join(__dirname, '../../build/icon.png'),
     autoHideMenuBar: true,
@@ -44,7 +41,6 @@ function createWindow(): void {
     const view = new WebContentsView()
     mainWindow.contentView.addChildView(view)
     view.setBounds(getContentBounds(mainWindow))
-    view.setBorderRadius(16)
     view.setVisible(false)
 
     view.webContents.on('did-navigate', (_event, finalUrl) => {
@@ -59,6 +55,10 @@ function createWindow(): void {
   }
 
   function switchTab(clickedTab: string) {
+    if (!tabs.has(clickedTab)) {
+      console.warn('A non Existent tab was clicked, ignoring the request to switch tabs.')
+      return
+    }
     tabs.get(activeTab)!.view.setVisible(false)
     tabs.get(clickedTab)!.view.setVisible(true)
     activeTab = clickedTab
@@ -84,7 +84,9 @@ function createWindow(): void {
 
   // resize whichever tab is currently active whenever the window resizes
   const updateBounds = () => {
-    tabs.get(activeTab)!.view.setBounds(getContentBounds(mainWindow))
+    for (const [, data] of tabs) {
+      data.view.setBounds(getContentBounds(mainWindow))
+    }
   }
   updateBounds()
   mainWindow.on('resize', updateBounds)
@@ -102,6 +104,10 @@ function createWindow(): void {
       url: tab.view.webContents.getURL(),
       isHome: tab.isHome
     }
+  })
+
+  ipcMain.handle('get-current-url', () => {
+    return tabs.get(activeTab)!.view.webContents.getURL()
   })
 
   mainWindow.on('ready-to-show', () => {
@@ -127,6 +133,19 @@ function createWindow(): void {
 
   let bookmarks: Bookmark[] = loadBookmarks()
   ipcMain.handle('get-bookmarks', () => bookmarks)
+
+  ipcMain.handle('get-tabs', () => {
+    const result: { id: string; url: string; isHome: boolean }[] = []
+
+    for (const [id, data] of tabs) {
+      result.push({
+        id: id,
+        isHome: data.isHome,
+        url: data.view.webContents.getURL()
+      })
+    }
+    return result
+  })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
