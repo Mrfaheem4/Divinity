@@ -74,7 +74,9 @@ function createWindow(): void {
   createTab('tab2', true)
   tabs.get('tab1')!.view.webContents.loadURL('https://www.google.com')
   tabs.get('tab2')!.view.webContents.loadURL('https://www.youtube.com')
-  tabs.get('tab1')!.view.setVisible(true) // tab1 starts as the visible one
+  tabs.get('tab1')!.isHome = false
+  tabs.get('tab2')!.isHome = false
+  tabs.get('tab1')!.view.setVisible(true)
 
   ipcMain.on('switch-tab', (_event, tabId: string) => {
     switchTab(tabId)

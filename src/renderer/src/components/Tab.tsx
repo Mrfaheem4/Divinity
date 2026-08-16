@@ -5,9 +5,11 @@ import Background from './Background'
 
 function Tab() {
   const [isDocked, setIsDocked] = useState(false)
+  const [url, setUrl] = useState('')
 
   useEffect(() => {
     window.api.getCurrentState().then(({ url, isHome }) => {
+      setUrl(url)
       console.log('restored state:', { url, isHome })
       if (!isHome) {
         setIsDocked(true)
@@ -16,7 +18,8 @@ function Tab() {
   }, [])
 
   useEffect(() => {
-    const unsubscribe = window.api.onTabSwitched(({ isHome }) => {
+    const unsubscribe = window.api.onTabSwitched(({ url, isHome }) => {
+      setUrl(url)
       setIsDocked(!isHome)
     })
     return unsubscribe
@@ -73,6 +76,7 @@ function Tab() {
           onDock={() => setIsDocked(true)}
           onSearch={handleSearchComplete}
           onGoHome={goHome}
+          url={url}
         />
       </div>
     </div>

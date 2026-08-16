@@ -15,12 +15,14 @@ function Searchbar({
   onDock,
   onSearch,
   onGoHome,
-  isDocked
+  isDocked,
+  url
 }: {
   onSearch?: (url: string) => void
   onDock: () => void
   onGoHome?: () => void
   isDocked: boolean
+  url: string
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -39,12 +41,10 @@ function Searchbar({
   }, [])
 
   useEffect(() => {
-    window.api.getCurrentState().then(({ url, isHome }) => {
-      if (isDocked) {
-        if (inputRef.current && url) inputRef.current.value = url
-      }
-    })
-  }, [])
+    if (inputRef.current) {
+      inputRef.current.value = url
+    }
+  }, [url])
 
   function handleFocus() {
     inputRef.current?.select()
@@ -56,7 +56,6 @@ function Searchbar({
       const targetTop = 4
       const deltaY = targetTop - rect.top
 
-      setIsDocked(true)
       onDock?.()
 
       animate(wrapperRef.current, {
@@ -97,7 +96,6 @@ function Searchbar({
   }
 
   function handleGoHome() {
-    setIsDocked(false)
     onGoHome?.()
   }
 
