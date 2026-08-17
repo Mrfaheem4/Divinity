@@ -5,7 +5,9 @@ interface Api {
   getCurrentUrl: () => Promise<string>
   onUrlChanged: (callback: (url: string) => void) => () => void
   getCurrentState: () => Promise<{ url: string; isHome: boolean }>
-  onTabSwitched: (callback: (state: { isHome: boolean; url: string }) => void) => () => void
+  onTabSwitched: (
+    callback: (state: { id: string; isHome: boolean; url: string }) => void
+  ) => () => void
 
   goBack: () => void
   goForward: () => void
@@ -16,6 +18,7 @@ interface Api {
   getBookmarks: () => Promise<{ label: string; url: string }[]>
   switchTab: (tabId: string) => void
   getTabs: () => Promise<{ id: string; url: string; isHome: boolean }[]>
+  newTab: () => void
 
   onTabsUpdated: (
     callback: (tabs: { id: string; url: string; isHome: boolean }[]) => void

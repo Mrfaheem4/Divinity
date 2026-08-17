@@ -9,7 +9,8 @@ interface Bookmark {
 
 const DEFAULT_BOOKMARKS: Bookmark[] = [
   { label: 'YouTube', url: 'https://youtube.com' },
-  { label: 'GitHub', url: 'https://github.com' }
+  { label: 'GitHub', url: 'https://github.com' },
+  { label: 'Cornhub', url: 'https://cornhub.website' }
 ]
 
 function faviconUrl(url: string): string {

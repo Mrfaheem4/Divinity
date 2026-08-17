@@ -3,6 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
+  newTab: () => ipcRenderer.send('new-tab'),
   navigate: (url: string) => ipcRenderer.send('navigate', url),
   getCurrentUrl: () => ipcRenderer.invoke('get-current-url'),
   onUrlChanged: (callback: (url: string) => void) => {
@@ -10,9 +11,11 @@ const api = {
     ipcRenderer.on('url-changed', listener)
     return () => ipcRenderer.removeListener('url-changed', listener)
   },
-  onTabSwitched: (callback: (state: { isHome: boolean; url: string }) => void) => {
-    const listener = (_e: Electron.IpcRendererEvent, state: { isHome: boolean; url: string }) =>
-      callback(state)
+  onTabSwitched: (callback: (state: { id: string; isHome: boolean; url: string }) => void) => {
+    const listener = (
+      _e: Electron.IpcRendererEvent,
+      state: { id: string; isHome: boolean; url: string }
+    ) => callback(state)
     ipcRenderer.on('tab-switched', listener)
     return () => ipcRenderer.removeListener('tab-switched', listener)
   },

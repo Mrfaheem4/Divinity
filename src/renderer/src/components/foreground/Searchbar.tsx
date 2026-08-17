@@ -1,33 +1,38 @@
 import { useEffect, useRef, useState } from 'react'
-import { animate } from 'animejs'
 import SpotlightCard from '../SpotlightCard'
 import { handleSearch } from '../../handlers/handleSearch'
 import {
   goBack,
   goForward,
   canGoBack as checkCanGoBack,
-  canGoForward as checkCanGoForward,
-  goHome
+  canGoForward as checkCanGoForward
 } from '../../handlers/handleNavigation'
 import Bookmarks from './Bookmarks'
+import { useTabStore } from '../../store/tabStore'
 
 function Searchbar({
-  onDock,
   onSearch,
-  onGoHome,
-  isDocked,
-  url
+  onGoHome
 }: {
   onSearch?: (url: string) => void
-  onDock: () => void
   onGoHome?: () => void
-  isDocked: boolean
-  url: string
 }) {
-  const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [canBack, setCanBack] = useState(false)
   const [canForward, setCanForward] = useState(false)
+
+  const activeTabId = useTabStore((s) => s.activeTabId)
+  const activeTab = useTabStore((s) => s.tabs.find((t) => t.id === s.activeTabId))
+  const isDocked = !(activeTab?.isHome ?? true)
+  console.log(
+    'Searchbar render — activeTabId:',
+    activeTabId,
+    'activeTab:',
+    activeTab,
+    'isDocked:',
+    isDocked
+  )
+  const url = activeTab?.url ?? ''
 
   useEffect(() => {
     const unsubscribe = window.api.onUrlChanged((url) => {
@@ -41,41 +46,15 @@ function Searchbar({
   }, [])
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.value = url
-    }
-  }, [url])
+    if (inputRef.current) inputRef.current.value = url
+  }, [url, activeTabId])
 
   function handleFocus() {
     inputRef.current?.select()
   }
 
   function dockAndNavigate(resolvedUrl: string) {
-    if (!isDocked && wrapperRef.current) {
-      const rect = wrapperRef.current.getBoundingClientRect()
-      const targetTop = 4
-      const deltaY = targetTop - rect.top
-
-      onDock?.()
-
-      animate(wrapperRef.current, {
-        translateY: deltaY,
-        width: '90%',
-        height: '2rem',
-        duration: 350,
-        ease: 'outExpo',
-        onComplete: () => {
-          if (wrapperRef.current) {
-            wrapperRef.current.style.transform = ''
-            wrapperRef.current.style.width = ''
-            wrapperRef.current.style.height = ''
-          }
-          onSearch?.(resolvedUrl)
-        }
-      })
-    } else {
-      onSearch?.(resolvedUrl)
-    }
+    onSearch?.(resolvedUrl)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -86,25 +65,18 @@ function Searchbar({
       inputRef.current?.blur()
       return
     }
-
     if (e.key !== 'Enter') return
     const query = e.currentTarget.value.trim()
     if (!query) return
-
     dockAndNavigate(handleSearch(query))
     inputRef.current?.blur()
   }
 
-  function handleGoHome() {
-    onGoHome?.()
-  }
-
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-auto">
       <div
-        ref={wrapperRef}
-        className={`pointer-events-auto flex items-center gap-2 ${
-          isDocked ? 'fixed top-1 w-[90%] h-8.5' : ''
+        className={`pointer-events-auto z-20 flex items-center gap-2 ${
+          isDocked ? 'fixed top-1 w-[90%] h-9' : 'relative'
         }`}
         style={!isDocked ? { width: '30rem', height: '3rem', marginTop: '20rem' } : undefined}
       >
@@ -115,11 +87,10 @@ function Searchbar({
               spotlightColor="rgba(255, 255, 255, 0.25)"
             >
               <button
-                onClick={() => handleGoHome()}
-
+                onClick={() => onGoHome?.()}
                 className="w-full h-full flex items-center justify-center rounded-full border-2 border-white/50 bg-transparent"
               >
-                <img src="./icons/home.svg" className="w-4 h-4" alt="forward" />
+                <img src="./icons/home.svg" className="w-4 h-4" alt="home" />
               </button>
             </SpotlightCard>
             <SpotlightCard
@@ -129,12 +100,11 @@ function Searchbar({
               <button
                 onClick={() => goBack()}
                 disabled={!canBack}
-                className="w-full h-full flex items-center justify-center rounded-full border-2 border-white/50 bg-transparent "
+                className="w-full h-full flex items-center justify-center rounded-full border-2 border-white/50 bg-transparent"
               >
                 <img src="./icons/backward.svg" className="w-4 h-4" alt="back" />
               </button>
             </SpotlightCard>
-
             <SpotlightCard
               className="!rounded-full !p-0 shrink-0 w-10 h-8"
               spotlightColor="rgba(255, 255, 255, 0.25)"
@@ -149,7 +119,6 @@ function Searchbar({
             </SpotlightCard>
           </>
         )}
-
         <SpotlightCard
           className="w-full h-full !rounded-full !p-0"
           spotlightColor="rgba(255, 255, 255, 0.25)"
@@ -167,7 +136,6 @@ function Searchbar({
           </div>
         </SpotlightCard>
       </div>
-
       {!isDocked && <Bookmarks onSelect={dockAndNavigate} />}
     </div>
   )
