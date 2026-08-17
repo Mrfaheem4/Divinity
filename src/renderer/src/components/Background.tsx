@@ -42,7 +42,10 @@ function CameraAim({ target }: { target: [number, number, number] }) {
 function Lights() {
   const light1 = useRef<DirectionalLight>(null!)
   const light2 = useRef<DirectionalLight>(null!)
-  const target = useRef(new Object3D())
+  const target = useRef<Object3D | null>(null)
+  if (target.current === null) {
+    target.current = new Object3D()
+  }
   const light3 = useRef<DirectionalLight>(null!)
 
   return (

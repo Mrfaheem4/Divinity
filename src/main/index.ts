@@ -36,6 +36,14 @@ function createWindow(): void {
   const tabs = new Map<string, TabData>()
   let activeTab = ''
 
+  function getActiveTab(): TabData {
+    const tab = tabs.get(activeTab)
+    if (!tab) {
+      throw new Error(`Active tab "${activeTab}" not found`)
+    }
+    return tab
+  }
+
   function getTabList() {
     const result: { id: string; url: string; isHome: boolean }[] = []
     for (const [id, data] of tabs) {
@@ -44,7 +52,7 @@ function createWindow(): void {
     return result
   }
 
-  function createTab(tabId: string, isHome: boolean) {
+  function createTab(tabId: string, isHome: boolean): TabData {
     const view = new WebContentsView()
     mainWindow.contentView.addChildView(view)
     view.setBounds(getContentBounds(mainWindow))
@@ -56,11 +64,14 @@ function createWindow(): void {
       }
     })
 
-    tabs.set(tabId, { view, isHome })
+    const tabData: TabData = { view, isHome }
+    tabs.set(tabId, tabData)
+    return tabData
   }
 
   function switchTab(clickedTab: string) {
-    if (!tabs.has(clickedTab)) {
+    const nextTab = tabs.get(clickedTab)
+    if (!nextTab) {
       console.warn('A non existent tab was clicked, ignoring the request to switch tabs.')
       return
     }
@@ -68,7 +79,6 @@ function createWindow(): void {
     const currentTab = tabs.get(activeTab)
     if (currentTab) currentTab.view.setVisible(false)
 
-    const nextTab = tabs.get(clickedTab)!
     nextTab.view.setVisible(!nextTab.isHome)
     activeTab = clickedTab
 
@@ -80,10 +90,52 @@ function createWindow(): void {
     mainWindow.webContents.send('tabs-updated', getTabList())
   }
 
+  function closeTab(tabId: string) {
+    const target = tabs.get(tabId)
+    if (!target) return
+
+    target.view.setVisible(false)
+    mainWindow.contentView.removeChildView(target.view)
+    target.view.webContents.close()
+    tabs.delete(tabId)
+
+    if (tabs.size === 0) {
+      const fallbackId = crypto.randomUUID()
+      createTab(fallbackId, true)
+      activeTab = fallbackId
+      mainWindow.webContents.send('tab-switched', {
+        id: fallbackId,
+        isHome: true,
+        url: ''
+      })
+      mainWindow.webContents.send('tabs-updated', getTabList())
+      return
+    }
+
+    const remaining = Array.from(tabs.keys())
+    const nextTabId =
+      remaining[remaining.indexOf(tabId) + 1] ?? remaining[remaining.indexOf(tabId) - 1]
+
+    if (tabId === activeTab) {
+      activeTab = nextTabId ?? remaining[0]
+      const nextTab = tabs.get(activeTab)
+      if (nextTab) {
+        nextTab.view.setVisible(!nextTab.isHome)
+        mainWindow.webContents.send('tab-switched', {
+          id: activeTab,
+          isHome: nextTab.isHome,
+          url: nextTab.view.webContents.getURL()
+        })
+      }
+    }
+
+    mainWindow.webContents.send('tabs-updated', getTabList())
+  }
+
   // one real starting tab, no more hardcoded test setup
   const initialTabId = crypto.randomUUID()
-  createTab(initialTabId, true)
-  tabs.get(initialTabId)!.view.setVisible(false)
+  const initialTab = createTab(initialTabId, true)
+  initialTab.view.setVisible(false)
   activeTab = initialTabId
 
   const updateBounds = () => {
@@ -111,12 +163,16 @@ function createWindow(): void {
     mainWindow.webContents.send('tabs-updated', getTabList())
   })
 
+  ipcMain.on('close-tab', (_event, tabId: string) => {
+    closeTab(tabId)
+  })
+
   ipcMain.handle('get-tabs', () => getTabList())
 
   // --- navigation ---
 
   ipcMain.on('navigate', (_event, url: string) => {
-    const tab = tabs.get(activeTab)!
+    const tab = getActiveTab()
     tab.view.webContents.loadURL(url)
     tab.view.setVisible(true)
     tab.isHome = false
@@ -125,30 +181,26 @@ function createWindow(): void {
   })
 
   ipcMain.on('go-home', () => {
-    const tab = tabs.get(activeTab)!
+    const tab = getActiveTab()
     tab.view.setVisible(false)
     tab.isHome = true
     mainWindow.webContents.send('tab-switched', { id: activeTab, isHome: true, url: '' })
     mainWindow.webContents.send('tabs-updated', getTabList())
   })
 
-  ipcMain.on('go-back', () => tabs.get(activeTab)!.view.webContents.navigationHistory.goBack())
-  ipcMain.on('go-forward', () =>
-    tabs.get(activeTab)!.view.webContents.navigationHistory.goForward()
-  )
-  ipcMain.on('reload', () => tabs.get(activeTab)!.view.webContents.reload())
+  ipcMain.on('go-back', () => getActiveTab().view.webContents.navigationHistory.goBack())
+  ipcMain.on('go-forward', () => getActiveTab().view.webContents.navigationHistory.goForward())
+  ipcMain.on('reload', () => getActiveTab().view.webContents.reload())
 
-  ipcMain.handle('can-go-back', () =>
-    tabs.get(activeTab)!.view.webContents.navigationHistory.canGoBack()
-  )
+  ipcMain.handle('can-go-back', () => getActiveTab().view.webContents.navigationHistory.canGoBack())
   ipcMain.handle('can-go-forward', () =>
-    tabs.get(activeTab)!.view.webContents.navigationHistory.canGoForward()
+    getActiveTab().view.webContents.navigationHistory.canGoForward()
   )
   ipcMain.handle('get-current-state', () => {
-    const tab = tabs.get(activeTab)!
+    const tab = getActiveTab()
     return { url: tab.view.webContents.getURL(), isHome: tab.isHome }
   })
-  ipcMain.handle('get-current-url', () => tabs.get(activeTab)!.view.webContents.getURL())
+  ipcMain.handle('get-current-url', () => getActiveTab().view.webContents.getURL())
 
   // --- bookmarks ---
 

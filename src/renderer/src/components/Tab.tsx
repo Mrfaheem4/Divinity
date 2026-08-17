@@ -4,6 +4,7 @@ import Searchbar from './foreground/Searchbar'
 import Background from './Background'
 import TabBar from './foreground/TabBar'
 import { useTabStore } from '../store/tabStore'
+import Label from './Label'
 
 function Tab() {
   const setTabs = useTabStore((s) => s.setTabs)
@@ -60,6 +61,9 @@ function Tab() {
     <div className="relative h-full w-full">
       <div className="absolute top-11 left-0 right-0 z-30 pointer-events-auto">
         <TabBar />
+      </div>
+      <div className="w-full h-full absolute top-0 left-0 z-0 pointer-events-none">
+        <Label />
       </div>
 
       <div

@@ -39,6 +39,7 @@ const api = {
   canGoForward: () => ipcRenderer.invoke('can-go-forward'),
   getBookmarks: () => ipcRenderer.invoke('get-bookmarks'),
   switchTab: (tabId: string) => ipcRenderer.send('switch-tab', tabId),
+  closeTab: (tabId: string) => ipcRenderer.send('close-tab', tabId),
   getTabs: () => ipcRenderer.invoke('get-tabs')
 }
 

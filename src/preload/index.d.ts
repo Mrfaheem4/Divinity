@@ -17,6 +17,7 @@ interface Api {
   canGoForward: () => Promise<boolean>
   getBookmarks: () => Promise<{ label: string; url: string }[]>
   switchTab: (tabId: string) => void
+  closeTab: (tabId: string) => void
   getTabs: () => Promise<{ id: string; url: string; isHome: boolean }[]>
   newTab: () => void
 
